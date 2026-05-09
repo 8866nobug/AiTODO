@@ -1,0 +1,90 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aiToDo
+  profiles:
+    active: dev
+  # 1. MySQL 配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/aitodo?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123456}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  # 2. Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      lettuce: # 使用 Lettuce 客户端驱动
+        pool:
+          max-active: 8        # 最大连接数
+          max-idle: 8          # 最大空闲连接
+
+# 3. MyBatis-Plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true # 开启驼峰命名转换
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 控制台打印SQL，开发环境建议开启
+  global-config:
+    db-config:
+      id-type: auto # 主键自增策略
+
+# 4. LangChain4j & AI 模型配置 (DashScope/通义千问)
+langchain4j:
+  community:
+    dashscope:
+      chat-model:
+        api-key:
+        model-name: qwen-plus
+        max-tokens: 2048
+        temperature: 0.7
+      # 如果需要流式输出，可以配置此项
+      streaming-chat-model:
+        api-key:
+        model-name: qwen-plus
+        max-tokens: 2048
+      embedding-model:
+        model-name: text-embedding-v3
+        api-key:
+        dimension: 1024
+  # 5. Milvus 向量数据库配置 (用于 RAG)
+  milvus:
+    host: ${MILVUS_HOST:localhost}
+    port: ${MILVUS_PORT:19530}
+    collection-name: todo_vectors
+    dimension: 1024 # 对应你使用的 Embedding 模型的维度（Qwen通常是1536）
+    timeout: 10s
+    auto-create-collection: true
+  # 硅基流动 Rerank 配置
+  siliconflow:
+    rerank:
+      base-url: https://api.siliconflow.cn/v1  # 注意：通常填到 v1 即可，SDK 会自动拼接 /rerank
+      api-key: sk-xxxxxxxxxxxxxx             # 填入你的真实 API Key
+      model-name: BAAI/bge-reranker-v2-m3
+
+# 6. SpringDoc (Swagger) 接口文档配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: /**
+
+# 7. 业务日志配置
+logging:
+  level:
+    root: INFO
+    com.wanger.aitodo.mapper: DEBUG # 打印具体Mapper的SQL执行
+    dev.langchain4j: DEBUG # 查看 AI 调用详情
